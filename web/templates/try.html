@@ -388,7 +388,7 @@
           let self = this;
           self.pending=[];
           let safeList = ['gene','chemical','variant','disease']
-          axios.get('/'+self.api+'/metadata').then(res=>{
+          axios.get('//pending.biothings.io/'+self.api+'/metadata').then(res=>{
             self.metadata = res.data;
             // console.log('META',res.data)
             self.numberOfDocs = self.metadata.src[self.getKeyName(self.metadata.src)].stats[self.getKeyName(self.metadata.src)];

@@ -65,8 +65,8 @@
         <div class="bg-dark jumbotron">
 				 {% if site == "pending" %}
 					<h1 class="mb-5">
-            Pending APIs
-          </h1>
+		            	Pending APIs
+		          	</h1>
  				 {% else %}
 					 <h1 class="mb-5">
 						 KP APIs
@@ -74,7 +74,7 @@
  				 {% endif %}
           <object  data-aos="fade-in" id="hero1" alt="pending apis" width="70%" type="image/svg+xml" data="static/img/hero-1.svg"></object>
           <div class="text-light font-weight-light">
-            <h3>(<span v-text="pending.length"></span>) APIs</h3>
+            <h3>(<span v-text="apiCount"></span>)APIs</h3>
             <input style="margin: 10px 0px 20px;padding: 10px;width: 400px;" type="text" v-model="filter" placeholder="Filter by API Name or Entity Type" v-on:input="updateInput">
 
           </div>
@@ -219,23 +219,25 @@
 			let safeList = ['gene','chemical','variant','disease']
 			self.loading = true;
 			axios.get('//pending.biothings.io/'+name+'/metadata').then(res=>{
+				if(!self.api["biothing_type"]){
+					self.api["biothing_type"] = res.data.biothing_type
+				} 
 				self.loading = false;
-				self.metadata = res.data
-				self.api["biothing_type"] = res.data.biothing_type
+				self.metadata = res.data;
 				if (self.metadata.hasOwnProperty('doc_type')) {
 					if (safeList.includes(self.metadata['doc_type'])) {
 						self.existingEntity = true
 					}
 				}
-				else if (self.metadata.hasOwnProperty('biothing_type')) {
-					if (safeList.includes(self.metadata['biothing_type'])) {
-						self.existingEntity = true
+					else if (self.metadata.hasOwnProperty('biothing_type')) {
+						if (safeList.includes(self.metadata['biothing_type'])) {
+							self.existingEntity = true
+						}
 					}
-				}
-			}).catch(err=>{
-				self.loading = false;
-				throw err;
-			})
+				}).catch(err=>{
+					self.loading = false;
+					throw err;
+				})			
 		},
 		numberWithCommas() {
 			let self = this;
@@ -285,10 +287,9 @@
 		let self = this;
 		if (self.api["_id"]) {
 			self.getMetadata(self.api["_id"])
-
 		}
   },
-  template: `<tr v-if="filter.length < 1">
+  template: `<tr>
 							<td class="text-left">
 								<template v-if='api && api["status"]'>
 									<i class="fas " :title='api["status"]' v-bind:class="[api['status'] === 'running' ? 'text-success fa-check-circle' : 'text-danger fa-exclamation-circle' ]"></i>
@@ -325,6 +326,7 @@
     el: '#index-app',
     data: function(){
       return {
+      	 apiCount: 0,
       	 filter:"",
          pending:[],
          shown:1000,
@@ -336,15 +338,25 @@
          success: false,
 		 apiList:[],
 		 context:{},
+		 apiCalls: 0
       }
     },
     methods: {
 	  updateInput () {
-	  	console.log(this.pending)
 	    filter = this.filter
-	    console.log(filter)
-	    // this.loadAnimation()
-	    // this.$emit('input', this.$el.innerText)
+	    console.log(this.apiCount)
+	    if(filter.length < 1){
+	    	this.apiCount = this.pending.length
+	    }else{
+	    	count = 0
+	    	this.pending.forEach(function (arrayItem) {
+		    	if(arrayItem._id.includes(filter) || arrayItem.biothing_type.includes(filter)){
+		    		count = count + 1
+		    	}
+			});
+	    	this.apiCount = count
+	    }
+
 	  },
       sortBy(n, numeric) {
      	  // function based off w3 schools funciton https://www.w3schools.com/howto/howto_js_sort_table.asp
@@ -614,6 +626,7 @@
 					self.pending = self.context.List
 					// console.log(self.context.List)
 				}
+				self.apiCount = self.pending.length
         this.loadAnimation();
 
 				this.registerServiceWorker();
